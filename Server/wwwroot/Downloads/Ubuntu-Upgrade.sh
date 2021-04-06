@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Set the shell to fail when commands fail, do not dynamically create veriables.
+# Set the shell to fail when commands fail, do not dynamically create variables.
 set -euo pipefail
 IFS=$'\n\t'
 servicefile="/etc/systemd/system/remotely.service"
