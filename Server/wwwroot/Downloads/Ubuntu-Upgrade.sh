@@ -2,10 +2,30 @@
 
 # Set the shell to fail when commands fail, do not dynamically create variables.
 set -euo pipefail
+blnDebug="false"
 IFS=$'\n\t'
 servicefile="/etc/systemd/system/remotely.service"
 githuborigin="https://github.com/lucent-sea/Remotely/releases/latest/download/Remotely_Server_Linux-x64.zip"
-ostype="";
+ostype=""
+
+
+# --------------------------------------------------------------------------
+# Function: ifdebug
+# Purpose:
+#			Confirm that we have the flags that we are expecting
+# --------------------------------------------------------------------------
+ifdebug () {
+	local blnDebug=${1};
+	shift
+	local mess="${1}";
+	shift
+	if [ "${blnDebug}" = "true" ]; then
+		echo "******************************" >&2;
+		echo "Debug: $0 ${mess}" >&2;
+		echo "******************************" >&2;
+	fi;
+}
+
 
 # --------------------------------------------------------------------------
 # Function: CheckSanity
@@ -80,7 +100,9 @@ mymain () {
 	shift
 	
 	local AppRoot=$(cat "${servicefile}" | grep -i "execstart" | cut -d' ' -f 2 | sed -e 's/\/[^\/]*$/\//')
-	local filename=$(echo "${githuborigin}" | sed -e 's/^.*\//')
+	ifdebug "${blnDebug}" "githuborigin:(${githuborigin})";
+	local filename=$(echo "${githuborigin}" | sed -e 's/^.*\///')
+	ifdebug "${blnDebug}" "filename:(${filename})";
 	
 	echo "Remotely server upgrade started."
 	
