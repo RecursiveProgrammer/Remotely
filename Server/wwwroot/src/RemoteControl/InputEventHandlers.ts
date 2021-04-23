@@ -19,10 +19,6 @@
     TouchKeyboardTextArea,
     MenuFrame,
     MenuButton,
-    QualityButton,
-    QualityBar,
-    QualitySlider,
-    AutoQualityAdjustCheckBox,
     ScreenViewerWrapper,
     WindowsSessionSelect,
     RecordSessionButton,
@@ -36,13 +32,13 @@
     ViewOnlyButton,
     FullScreenButton
 } from "./UI.js";
-import { Sound } from "../Shared/Sound.js";
+import { Sound } from "./Sound.js";
 import { ViewerApp } from "./App.js";
-import { Point } from "../Shared/Models/Point.js";
+import { Point } from "./Models/Point.js";
 import { UploadFiles } from "./FileTransferService.js";
-import { RemoteControlMode } from "../Shared/Enums/RemoteControlMode.js";
-import { GetDistanceBetween } from "../Shared/Utilities.js";
-import { ShowMessage } from "../Shared/UI.js";
+import { RemoteControlMode } from "./Enums/RemoteControlMode.js";
+import { GetDistanceBetween } from "./Utilities.js";
+import { ShowMessage } from "./UI.js";
 import { SetSettings } from "./SettingsService.js";
 
 var lastPointerMove = Date.now();
@@ -183,10 +179,10 @@ export function ApplyInputHandlers() {
     InviteButton.addEventListener("click", (ev) => {
         var url = "";
         if (ViewerApp.Mode == RemoteControlMode.Normal) {
-            url = `${location.origin}${location.pathname}?sessionID=${ViewerApp.ClientID}`;
+            url = `${location.origin}${location.pathname}?sessionID=${ViewerApp.CasterID}`;
         }
         else {
-            url = `${location.origin}${location.pathname}?clientID=${ViewerApp.ClientID}&serviceID=${ViewerApp.ServiceID}`;
+            url = `${location.origin}${location.pathname}?clientID=${ViewerApp.CasterID}&serviceID=${ViewerApp.ServiceID}`;
         }
         ViewerApp.ClipboardWatcher.SetClipboardText(url);
         ShowMessage("Link copied to clipboard.");
@@ -219,18 +215,6 @@ export function ApplyInputHandlers() {
         ev.stopPropagation();
         MenuButton.style.top = `${ev.touches[0].clientY}px`;
     });
-    QualityButton.addEventListener("click", (ev) => {
-        closeAllHorizontalBars("qualityBar");
-        QualityBar.classList.toggle("open");
-    })
-    QualitySlider.addEventListener("change", (ev) => {
-        var value = Number(QualitySlider.value);
-
-        ViewerApp.Settings.qualityLevel = value;
-        SetSettings(ViewerApp.Settings);
-
-        ViewerApp.MessageSender.SendQualityChange(value);
-    });
     StreamVideoButton.addEventListener("click", (ev) => {
         var toggleOn = !StreamVideoButton.classList.contains("toggled");
 
@@ -239,14 +223,6 @@ export function ApplyInputHandlers() {
 
         UpdateStreamingToggled(toggleOn);
         ViewerApp.MessageSender.SendToggleWebRtcVideo(toggleOn);
-    });
-    AutoQualityAdjustCheckBox.addEventListener("change", ev => {
-        var checked = AutoQualityAdjustCheckBox.checked;
-
-        ViewerApp.Settings.autoQualityEnabled = checked;
-        SetSettings(ViewerApp.Settings);
-
-        ViewerApp.MessageSender.SendAutoQualityAdjust(checked);
     });
 
     [ ScreenViewer, VideoScreenViewer ].forEach(viewer => {

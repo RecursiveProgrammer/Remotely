@@ -7,6 +7,7 @@ using System;
 using System.Drawing;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Threading;
 
 namespace Remotely.Desktop.Core.Services
 {
@@ -110,7 +111,8 @@ namespace Remotely.Desktop.Core.Services
         public Task SendDto<T>(T dto) where T : BaseDto
         {
             CaptureChannel.SendMessage(MessagePackSerializer.Serialize(dto));
-            return TaskHelper.DelayUntilAsync(() => CurrentBuffer < 64, TimeSpan.FromSeconds(5));
+            TaskHelper.DelayUntil(() => CurrentBuffer < 64_000, TimeSpan.FromSeconds(5));
+            return Task.CompletedTask;
         }
 
         public async Task SetRemoteDescription(string type, string sdp)

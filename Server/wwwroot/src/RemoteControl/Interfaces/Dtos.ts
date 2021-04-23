@@ -1,15 +1,6 @@
 import { BaseDto } from "./BaseDto.js";
-import { BaseDtoType } from "../../Shared/Enums/BaseDtoType.js";
-import { WindowsSession } from "../../Shared/Models/WindowsSession.js";
-
-export class AutoQualityAdjustDto implements BaseDto {
-    constructor(isOn: boolean) {
-        this.IsOn = isOn;
-    }
-
-    IsOn: boolean;
-    DtoType: BaseDtoType = BaseDtoType.AutoQualityAdjust;
-}
+import { BaseDtoType } from "../Enums/BaseDtoType.js";
+import { WindowsSession } from "../Models/WindowsSession.js";
 
 
 export interface AudioSampleDto extends BaseDto {
@@ -23,7 +14,6 @@ export interface CaptureFrameDto extends BaseDto {
     Width: number;
     Height: number;
     ImageBytes: Uint8Array;
-    ImageQuality: number;
 }
 
 export interface ClipboardTextDto extends BaseDto {
@@ -161,15 +151,6 @@ export class MouseWheelDto implements BaseDto {
     DeltaX: number;
     DeltaY: number;
     DtoType: BaseDtoType = BaseDtoType.MouseWheel;
-}
-
-export class QualityChangeDto implements BaseDto {
-    constructor(qualityLevel: number) {
-        this.QualityLevel = qualityLevel;
-    }
-
-    QualityLevel: number;
-    DtoType: BaseDtoType = BaseDtoType.QualityChange;
 }
 
 export interface ScreenDataDto extends BaseDto {

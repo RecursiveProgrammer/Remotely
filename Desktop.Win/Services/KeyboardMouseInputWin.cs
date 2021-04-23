@@ -14,11 +14,10 @@ namespace Remotely.Desktop.Win.Services
 {
     public class KeyboardMouseInputWin : IKeyboardMouseInput
     {
-        private volatile bool inputBlocked;
-
-        private CancellationTokenSource CancelTokenSource { get; set; }
-
-        private ConcurrentQueue<Action> InputActions { get; } = new ConcurrentQueue<Action>();
+        private readonly ConcurrentQueue<Action> _inputActions = new();
+        private CancellationTokenSource _cancelTokenSource;
+        private volatile bool _inputBlocked;
+        private Thread _inputProcessingThread;
 
         public Tuple<double, double> GetAbsolutePercentFromRelativePercent(double percentX, double percentY, IScreenCapturer capturer)
         {
@@ -223,9 +222,9 @@ namespace Remotely.Desktop.Win.Services
 
         public void ToggleBlockInput(bool toggleOn)
         {
-            InputActions.Enqueue(() =>
+            _inputActions.Enqueue(() =>
             {
-                inputBlocked = toggleOn;
+                _inputBlocked = toggleOn;
                 var result = BlockInput(toggleOn);
                 Logger.Write($"Result of ToggleBlockInput set to {toggleOn}: {result}");
             });
@@ -233,7 +232,7 @@ namespace Remotely.Desktop.Win.Services
 
         private void App_Exit(object sender, System.Windows.ExitEventArgs e)
         {
-            CancelTokenSource?.Cancel();
+            _cancelTokenSource?.Cancel();
         }
         private void CheckQueue(CancellationToken cancelToken)
         {
@@ -241,7 +240,7 @@ namespace Remotely.Desktop.Win.Services
             {
                 try
                 {
-                    if (InputActions.TryDequeue(out var action))
+                    if (_inputActions.TryDequeue(out var action))
                     {
                         action();
                     }
@@ -301,32 +300,32 @@ namespace Remotely.Desktop.Win.Services
         }
         private void StartInputProcessingThread()
         {
-            CancelTokenSource?.Cancel();
-            CancelTokenSource?.Dispose();
+            _cancelTokenSource?.Cancel();
+            _cancelTokenSource?.Dispose();
 
 
             // After BlockInput is enabled, only simulated input coming from the same thread
             // will work.  So we have to start a new thread that runs continuously and
             // processes a queue of input events.
-            var newThread = new Thread(() =>
+            _inputProcessingThread = new Thread(() =>
             {
                 Logger.Write($"New input processing thread started on thread {Thread.CurrentThread.ManagedThreadId}.");
-                CancelTokenSource = new CancellationTokenSource();
+                _cancelTokenSource = new CancellationTokenSource();
 
-                if (inputBlocked)
+                if (_inputBlocked)
                 {
                     ToggleBlockInput(true);
                 }
-                CheckQueue(CancelTokenSource.Token);
+                CheckQueue(_cancelTokenSource.Token);
             });
 
-            newThread.SetApartmentState(ApartmentState.STA);
-            newThread.Start();
+            _inputProcessingThread.SetApartmentState(ApartmentState.STA);
+            _inputProcessingThread.Start();
         }
 
         private void TryOnInputDesktop(Action inputAction)
         {
-            InputActions.Enqueue(() =>
+            _inputActions.Enqueue(() =>
             {
                 try
                 {

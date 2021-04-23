@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
-using Remotely.Server.Attributes;
+using Remotely.Server.Auth;
 using Remotely.Server.Models;
 using Remotely.Server.Services;
 using Remotely.Shared.Enums;
@@ -14,6 +14,8 @@ namespace Remotely.Server.Hubs
     [ServiceFilter(typeof(RemoteControlFilterAttribute))]
     public class ViewerHub : Hub
     {
+        public static int RemoteControlSessionCount { get; private set; }
+
         public ViewerHub(IDataService dataService,
             IHubContext<CasterHub> casterHubContext,
             IHubContext<AgentHub> agentHub,
@@ -168,12 +170,13 @@ namespace Remotely.Server.Hubs
                 var user = DataService.GetUserByID(Context.UserIdentifier);
                 if (string.IsNullOrWhiteSpace(RequesterName))
                 {
-                    RequesterName = user.DisplayName ?? user.UserName;
+                    RequesterName = user.UserOptions.DisplayName ?? user.UserName;
                 }
                 orgId = user.OrganizationID;
                 var currentUsers = CasterHub.SessionInfoList.Count(x =>
                     x.Key != screenCasterID &&
-                    x.Value.OrganizationID == orgId);
+                    x.Value.OrganizationID == orgId &&
+                    x.Value.ViewerList.Any());
                 if (currentUsers >= AppConfig.RemoteControlSessionLimit)
                 {
                     await Clients.Caller.SendAsync("ShowMessage", "Max number of concurrent sessions reached.");

@@ -12,22 +12,31 @@ namespace Remotely.Desktop.Core.Utilities
 {
     public class ImageUtils
     {
-        public static ImageCodecInfo GifEncoder { get; } = ImageCodecInfo.GetImageEncoders().FirstOrDefault(x => x.FormatID == ImageFormat.Gif.Guid);
-        public static ImageCodecInfo JpegEncoder { get; } = ImageCodecInfo.GetImageEncoders().FirstOrDefault(x => x.FormatID == ImageFormat.Jpeg.Guid);
+        private static ImageCodecInfo _jpegEncoder = ImageCodecInfo.GetImageEncoders().FirstOrDefault(x => x.FormatID == ImageFormat.Jpeg.Guid);
 
-        public static byte[] EncodeBitmap(Bitmap bitmap, EncoderParameters encoderParams)
-        {
-            
-            using var ms = new MemoryStream();
-            bitmap.Save(ms, JpegEncoder, encoderParams);
-            return ms.ToArray();
-        }
+        //public static byte[] EncodeWithSkia(Bitmap bitmap, SKEncodedImageFormat format, int quality)
+        //{
+        //    using var ms = new MemoryStream();
+        //    var info = new SKImageInfo(bitmap.Width, bitmap.Height);
+        //    var skBitmap = new SKBitmap(info);
+        //    using (var pixmap = skBitmap.PeekPixels())
+        //    {
+        //        bitmap.ToSKPixmap(pixmap);
+        //    }
 
-        public static byte[] EncodeGif(Bitmap diffImage)
+        //    skBitmap.Encode(ms, format, quality);
+
+        //    return ms.ToArray();
+        //}
+
+        public static byte[] EncodeJpeg(Bitmap bitmap, int quality)
         {
-            diffImage.MakeTransparent(Color.FromArgb(0, 0, 0, 0));
             using var ms = new MemoryStream();
-            diffImage.Save(ms, ImageFormat.Gif);
+            using var encoderParams = new EncoderParameters(1)
+            {
+                Param = new[] { new EncoderParameter(Encoder.Quality, quality) }
+            };
+            bitmap.Save(ms, _jpegEncoder, encoderParams);
             return ms.ToArray();
         }
 
@@ -84,8 +93,7 @@ namespace Remotely.Desktop.Core.Utilities
 
                             if (data1[0] != data2[0] ||
                                 data1[1] != data2[1] ||
-                                data1[2] != data2[2] ||
-                                data1[3] != data2[3])
+                                data1[2] != data2[2])
                             {
 
                                 if (row < top)
@@ -155,11 +163,7 @@ namespace Remotely.Desktop.Core.Utilities
             {
                 throw new Exception("Bitmaps are not of equal dimensions.");
             }
-            if (!Bitmap.IsAlphaPixelFormat(currentFrame.PixelFormat) || !Bitmap.IsAlphaPixelFormat(previousFrame.PixelFormat) ||
-                !Bitmap.IsCanonicalPixelFormat(currentFrame.PixelFormat) || !Bitmap.IsCanonicalPixelFormat(previousFrame.PixelFormat))
-            {
-                throw new Exception("Bitmaps must be 32 bits per pixel and contain alpha channel.");
-            }
+
             var width = currentFrame.Width;
             var height = currentFrame.Height;
 

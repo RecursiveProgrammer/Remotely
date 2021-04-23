@@ -1,9 +1,9 @@
 ﻿import * as UI from "./UI.js";
-import { BaseDtoType } from "../Shared/Enums/BaseDtoType.js";
+import { BaseDtoType } from "./Enums/BaseDtoType.js";
 import { BaseDto } from "./Interfaces/BaseDto.js";
 import { ViewerApp } from "./App.js";
-import { ShowMessage } from "../Shared/UI.js";
-import { Sound } from "../Shared/Sound.js";
+import { ShowMessage } from "./UI.js";
+import { Sound } from "./Sound.js";
 import {
     AudioSampleDto,
     CaptureFrameDto,
@@ -60,13 +60,9 @@ export class DtoMessageHandler {
     }
     
     HandleCaptureFrame(captureFrame: CaptureFrameDto) {
-        if (UI.AutoQualityAdjustCheckBox.checked &&
-            Number(UI.QualitySlider.value) != captureFrame.ImageQuality) {
-            UI.QualitySlider.value = String(captureFrame.ImageQuality);
-        }
 
         if (captureFrame.EndOfFrame) {
-            let completedFrame = new Blob(this.ImagePartials, { type: "image/jpeg" });
+            let completedFrame = new Blob(this.ImagePartials);
 
             this.ImagePartials = [];
 
@@ -114,8 +110,6 @@ export class DtoMessageHandler {
     }
     HandleScreenData(screenDataDto: ScreenDataDto) {
         UI.UpdateDisplays(screenDataDto.SelectedScreen, screenDataDto.DisplayNames);
-        ViewerApp.MessageSender.SendAutoQualityAdjust(ViewerApp.Settings.autoQualityEnabled);
-        ViewerApp.MessageSender.SendQualityChange(ViewerApp.Settings.qualityLevel);
     }
 
     HandleScreenSize(screenSizeDto: ScreenSizeDto) {

@@ -1,17 +1,9 @@
 # Remotely
-A remote control and remote scripting solution, built with .NET Core, SignalR Core, and WebRTC.
+A remote control and remote scripting solution, built with .NET 5, Blazor, SignalR Core, and WebRTC.
 
 [![Build Status](https://dev.azure.com/translucency/Remotely/_apis/build/status/Remotely-ReleaseBuild?branchName=master)](https://dev.azure.com/translucency/Remotely/_build/latest?definitionId=17&branchName=master)
 ![GitHub Build](https://github.com/lucent-sea/Remotely/workflows/GitHub%20Build/badge.svg)
 
-
-> NOTE: Development has been suspended.  
->  
-> I will be taking a break from Remotely during 2021 to make more time for family, self-care, and other interests.  The repo will be archived until I resume development, so that I don't get overwhelmed with issues and requests.
->  
->  Take care and stay safe.
->  
->  \- Jared
 
 ## Donations
 If this project has benefited you in some way, or if you just want to show appreciation, please consider donating to a charity.
@@ -26,79 +18,86 @@ You can also sponsor the project as a way of saying "thank you".  But if you hav
 
 
 ## Project Links
-Demo App: https://app.remotely.one  
+Public Server: https://app.remotely.one  
 Website: https://remotely.one  
 Subreddit: https://www.reddit.com/r/remotely_app/  
+Docker: https://hub.docker.com/r/translucency/remotely  
+
+![image](https://user-images.githubusercontent.com/20995508/113913261-f7002a00-9790-11eb-81b3-c36fb8aa536d.png)
+
+## WARNING:
+Remotely is undergoing a major overhaul for its server installation process.  There will be some instability for a short time, and the documentation below may not reflect the current state.  It's recommended that you use the installation scripts from the latest full release if you don't wish to participate in testing.
 
 ## Disclaimer
-Hosting a Remotely server requires building and running an ASP.NET Core web app behind IIS (Windows) or Nginx (Ubuntu).  It's expected that the person deploying and maintaining the server is familiar with this process.
+Hosting a Remotely server requires running an ASP.NET Core web app behind IIS (Windows), Nginx (Ubuntu), or Caddy Server (any OS).  It's expected that the person deploying and maintaining the server is familiar with this process.  Since this is a hobby project that I develop in between working full time and raising a family, there simply isn't time available to provide support in this capacity.
 
-It's *highly* encouraged that you get comfortable building and deploying from source.  This allows you to hard-code your server's hostname into the desktop client and the installer, which makes for a better experience for the end user.  If you don't want to use any of the methods below, you can look at the GitHub Actions workflows to see how the process can be automated, using the `Publish.ps1` script.  You can use those as reference for creating an automation process that works for you.  You can also use Azure Pipelines for free (which I personally use).
+## GitHub Actions
+GitHub Actions allows you to build and deploy Remotely for free from their cloud servers.  Since the Windows agent can only be built on Windows, and the Mac agent can only be built on Mac, using a build platform like GitHub Actions or Azure Pipelines is the only reasonable way to build the whole project.  The definitions for the build processes are located in `/.github/workflows/` folder.
 
+I've created a cross-platform command line tool that can leverage the GitHub Actions REST API to build the project and install it on your private server.  This process will also embed your server's URL into the desktop clients, so that they won't need to prompt the end user to enter it.
 
-## Hosting a Server (Windows)
-* Create a site in IIS that will run Remotely.
-* Run Install-RemotelyServer.ps1 (as an administrator), which is on the [Releases page](https://github.com/lucent-sea/Remotely/releases/latest) and in the [Utilities folder in source control](https://raw.githubusercontent.com/lucent-sea/Remotely/master/Utilities/Install-RemotelyServer.ps1).
-    * Alternatively, you can build from source and copy the server files to the site folder.
-* Download and install the .NET Core Runtime (not the SDK) with the Hosting Bundle.
-	* Link: https://dotnet.microsoft.com/download/dotnet-core/current/runtime
-	* This includes the Hosting Bundle for Windows, which allows you to run ASP.NET Core in IIS.
-	* Important: If you installed .NET Core Runtime before installing all the required IIS features, you may need to run a repair on the .NET Core Runtime installation.
-* Change values in appsettings.json for your environment.  Make a copy named `appsettings.Production.json` (see Configuration section below).
-* By default, SQLite is used for the database.
-    * The "Remotely.db" database file is automatically created in the root folder of your site.
-	* You can browse and modify the contents using [DB Browser for SQLite](https://sqlitebrowser.org/).
-* If the site will be public-facing, configure your bindings in IIS.
-* An SSL certificate for HTTPS is recommended.  You can install one for free using Let's Encrypt.
-	* Resources: https://letsencrypt.org/, https://certifytheweb.com/
-* Documentation for hosting in IIS can be found here: https://docs.microsoft.com/en-us/aspnet/core/host-and-deploy/iis
-* There is no default account.  You must create the first one via the Register page, which will create an account that is both a server and organization admin.
+## Installation Instructions:
+- Before attempting installation, verify that your domain name is resolving to your server's IP address.
+  - For example, I can use the command `ping app.remotely.one` and see the IP address to which it resolves.
+- Find the `Remotely_Server_Installer[.exe]` CLI tool for the latest release on the [Releases page](https://github.com/lucent-sea/Remotely/releases).
+  - You will download and run it on the server where you'll be hosting Remotely.
+  - You can choose between installing the pre-built release package, or entering GitHub credentials to build and install a customized server.
+  - The pre-built package will not have your server's URL embedded in the clients.  End users will need to enter it manually.
+- If you use the pre-built package, you're done!  Otherwise, follow the below steps for using the GitHub Actions integration.
+- Fork the repo if you haven't already.
+- Go to the Actions tab in your forked repo and make sure you can see the Build workflows.
+  - Before you can use Actions for the first time, there will be prompt that you must accept on this page.
+- Create a Personal Access Token that the installer will use to authorize with GitHub.
+  - Located here: https://github.com/settings/tokens
+  - It needs to have the `repo` scope.
+  - Save the PAT when it's displayed.  It will only be shown once.
+- By default, the server will be built from the author's repo.
+  - If you want to build from your fork, comment out the `repository` line in `Build.yml` (in your repo).  There's a comment in the file that points out the line.
+- On your server, download the latest server installer executable (Linux or Windows) from [my releases page](https://github.com/lucent-sea/Remotely/releases).
+- Run the app with elevation (e.g. sudo or "Run as admin").
+- Follow the prompts to build and install the server.
+- Use `--help` argument to see all the command line arguments.
+  - If values are provided for all arguments, it will run non-interactive.
 
-## Hosting a Server (Ubuntu)
-* Ubuntu 20.04, 19.04, and 18.04 have been tested.
-* Run Ubuntu_Server_Install.sh (with sudo), which is on the [Releases page](https://github.com/lucent-sea/Remotely/releases/latest) and in the [Utilities folder in source control](https://raw.githubusercontent.com/lucent-sea/Remotely/master/Utilities/Ubuntu_Server_Install.sh).
-	* The script is designed to install Remotely and Nginx on the same server, running Ubuntu 18.04 or 19.04.  You'll need to manually set up other configurations.
-    * A helpful user supplied an example Apache configuration, which can be found in the Utilities folder.
-    * The script will prompt for the "App root" location, which is the above directory where the server files are located.
-	* The script installs the .NET Core runtime, as well as other dependencies.
-	* Certbot is used in this script and will install an SSL certificate for your site.  Your server needs to have a public domain name that is accessible from the internet for this to work.
-		* More information: https://letsencrypt.org/, https://certbot.eff.org/
-	* Alternatively, you can build from source (using RuntimeIdentifier "linux-x64" for the server) and copy the server files to the site folder.
-* Change values in appsettings.json for your environment.  Make a copy named `appsettings.Production.json` (see Configuration section below).
-* Documentation for hosting behind Nginx can be found here: https://docs.microsoft.com/en-us/aspnet/core/host-and-deploy/linux-nginx
-* There is no default account.  You must create the first one via the Register page, which will create an account that is both a server and organization admin.
+## After Installation
+- In the site's content directory, make a copy of the `appsettings.json` file and name it `appsettings.Production.json`.
+  - The server will use this new file for reading/writing its settings, and it won't be overwritten by future ugprades.
+- If using Caddy, a TLS cert will be installed automatically.
+  - When installling on Nginx, the script will use Certbot and prompt you to install a cert.
+  - For Windows IIS, you'll need to use a separate program that integrates with Let's Encrypt.
+    - Resources: https://letsencrypt.org/docs/client-options/#clients-windows-/-iis
+- By default, SQLite is used for the database.
+    - The "Remotely.db" database file is automatically created in the root folder of your site.
+	- You can browse and modify the contents using [DB Browser for SQLite](https://sqlitebrowser.org/).
 
+## Upgrading
+* To upgrade a server, do any of the below to copy the new Server application files.
+	* Run one of the GitHub Actions workflows, then copy the ZIP contents to the site's content folder.
+	* Build from source as described above and `rsync`/`robocopy` the output files to the server directory.
+	* Build from source and deploy to IIS (e.g. `dotnet publish /p:PublishProfile=MyProfile`)
+* For Linux, you'll need to restart the Remotely service in systemd after overwriting the files.
+* For Windows, you'll need to shut down the site's Application Pool in IIS before copying the files.
+	* Windows won't let you overwrite files that are in use.
+* The only things that shouldn't be overwritten are the database DB file (if using SQLite) and the `appsettings.Production.json`.  These files should never exist in the publish output.
 
 ## Hosting Scenarios
 There are countless ways to host an ASP.NET Core app, and I can't document or automate all of them.  For hosting scenarios aside from the above two, please refer to Microsoft's documentation.
 - https://docs.microsoft.com/en-us/aspnet/core/host-and-deploy/
 
 
-## Build Instructions (GitHub)
-GitHub Actions allows you to build and deploy Remotely for free from their cloud servers.  The definitions for the build processes are located in `/.github/workflows/` folder.
-
-After forking the repo, follow the instructions in the workflow YML file for configuring GitHub Secrets, then run the workflow.
-
-## Build Instructions (Windows 10)  
+## Build and Debug Instructions (Windows 10)  
 The following steps will configure your Windows 10 machine for building the Remotely server and clients.
 * Install Visual Studio 2019.
     * Link: https://visualstudio.microsoft.com/downloads/
 	* You only need the below Individual Components for building:
-	    * .NET Core SDK (latest version).
+	    * .NET SDK (latest version).
 		* MSBuild (which auto-selects Roslyn compilers).
 		* NuGet targets and build tasks.
 		* .NET Framework 4.8 SDK.
 	    * For debugging and development, you'll need all relevant workloads.
-* Install Node.js.
-	* Link: https://nodejs.org/
 * Install Git for Windows.
     * Link: https://git-scm.com/downloads
 * Clone the git repository: `git clone https://github.com/lucent-sea/remotely`
-* Run Publish.ps1 in the [Utilities folder in source control](https://raw.githubusercontent.com/lucent-sea/Remotely/master/Utilities/Publish.ps1).
-    * Example: `powershell -f [path]\Publish.ps1 -outdir C:\inetpub\remotely -rid win10-x64 -hostname https://mysite.mydomain.com`
-    	* Use `-rid linux-x64` if you're going to host on Ubuntu.
-    * The output folder will now contain the server, with the clients in the Downloads folder.
-	* The above hostname will be hardcoded in the screen-sharing desktop apps and the installer.
 * When debugging, the agent will use a pre-defined device ID and connect to https://localhost:5001.
 * In development environment, the server will assign all connecting agents to the first organization.
 * The above two allow you to debug the agent and server together, and see your device in the list.
@@ -108,14 +107,6 @@ The first account created will be an admin for both the server and the organizat
 
 An organization admin has access to the Organization page and server log entries specific to his/her organization.  A server admin has access to the Server Config page and can see server log entries that don't belong to an organization. 
 
-## Upgrading
-* To upgrade a server, do any of the below to copy the new Server application files.
-	* Run one of the GitHub Actions workflows.
-	* Build from source as described above and `rsync`/`robocopy` the output files to the server directory.
-	* Build from source and deploy to IIS (e.g. `dotnet publish /p:PublishProfile=MyProfile`)
-	* Re-run the installer script supplied in the releases.
-* For Linux, you'll also need to restart the Remotely service in systemd after overwriting the files.
-* The only things that can't be overwritten are the database DB file (if using SQLite) and the `appsettings.Production.json`.  These files should never exist in the publish output.
 
 ## Branding
 Within the Account section, there is a tab for branding, which will apply to the quick support clients and Windows installer.
@@ -135,16 +126,15 @@ For more information on configuring ASP.NET Core, see https://docs.microsoft.com
 
 * AllowApiLogin: Whether to allow logging in via the API controller.  API access tokens are recommended over this approach.
 * BannedDevices: An array of device IDs, names, or IP addresses to ban.  When they try to connect, an uninstall command will immediately be sent back.
-* DataRetentionInDays: How long event logs and remote command logs will be kept.
+* DataRetentionInDays: How long logs and other data will be kept on the server.  Set to -1 to retain indefinitely (not recommended).
 * DBProvider: Determines which of the three connection strings (at the top) will be used.  The appropriate DB provider for the database type is automatically loaded in code.
-* DefaultPrompt: The default prompt string you'll see for each line on the console.
 * EnableWindowsEventLog: Whether to also add server log entries to the Windows Event Log.
 * EnforceAttendedAccess: Clients will be prompted to allow unattended remote control attempts.
 * IceServers: The ICE (STUN/TURN) servers to use for WebRTC.
-* KnownProxies: If your Nginx server is on a different machine and is forwarding requests to the Remotely server, you will need to add the IP of the Nginx server to this array.
+* KnownProxies: If your reverse proxy is on a different machine and is forwarding requests to the Remotely server, you will need to add the IP of the reverse proxy server to this array.
 * MaxOrganizationCount: By default, one organization can exist on the server, which is created automatically when the first account is registered.  Afterward, self-registration will be disabled.
     * Set this to -1 or increase it to a specific number to allow multi-tenancy.
-* RedirectToHttps: Whether ASP.NET Core will redirect all traffic from HTTP to HTTPS.  This is independent of Nginx and IIS configurations that do the same.
+* RedirectToHttps: Whether ASP.NET Core will redirect all traffic from HTTP to HTTPS.  This is independent of Caddy, Nginx, and IIS configurations that do the same.
 * RemoteControlNotifyUsers: Whether to show a notification to the end user when an unattended remote control session starts.
 * RemoteControlSessionLimit: How many concurrent remote control sessions are allowed per organization.
 * RemoteControlRequiresAuthentication: Whether the remote control page requires authentication to establish a connection.
@@ -179,6 +169,7 @@ You can change database by changing `DBProvider` in `ApplicationOptions` to `SQL
 * Linux: Only Ubuntu 18.04+ is tested.
 * For the Ubuntu's "quick support" client, you must first install the following dependencies:
     * libx11-dev
+	* libxrandr-dev
     * libc6-dev
     * libgdiplus
     * libxtst-dev
@@ -196,22 +187,36 @@ There's a page at `/GetSupport` where end users can request support.  When the f
 
 A shortcut to this page is placed in the `\Program Files\Remotely\` folder.  You can copy it anywhere you like.  You can also have it copied to the desktop automatically by using the `-supportshortcut` switch on the installer.
 	
-## .NET Core Deployments
-* .NET Core has two methods of deployment: framework-dependent and self-contained.
-	* Framework-dependent deployments require the .NET Core runtime to be installed on the target computers.  It must be the same version that was used to build the app.
+## .NET Deployments
+* .NET has two methods of deployment: framework-dependent and self-contained.
+	* Framework-dependent deployments require the .NET runtime to be installed on the target computers.  It must be the same version that was used to build the app.
 	* Self-contained deployments include a copy of the runtime, so you don't need to install it on the target computers.  As a result, the total file size is much larger.
-* .NET Core uses runtime identifiers that are targeted when building.
+* .NET uses runtime identifiers that are targeted when building.
 	* Link: https://docs.microsoft.com/en-us/dotnet/core/rid-catalog
 
 
 ## Shortcut Keys
 There are a few shortcut keys available when using the console.
-* / : Slash will open the autocomplete for selecting the current command mode.  The names are configurable in the Account - Options page.
+* / : Slash will allow you to switch between shells.  The names are configurable in the Options page.
 * Up/Down: Use arrow up/down to cycle through input history.
-* Ctrl + Up/Down: Scroll the console output window.
 * Ctrl + Q: Clear the output window.
-* Esc: Close the autocomplete window.
 
+## Port Configuration
+You can change the local port that the Remotely .NET server listens on by adding the below to `appsettings.Production.json`:
+
+```
+"Kestrel": {
+    "Endpoints": {
+      "Http": {
+        "Url": "http://localhost:{port-number}"
+      }
+    }
+  }
+```
+
+Alternatively, you can use a command-line argument for the `Remotely_Server` process or set an environment variable.
+  - `--urls http://localhost:{port-number}`
+  - `ASPNETCORE_URLS=http://localhost:{port-number}`
 
 ## API and Integrations
 Remotely has a basic API, which can be browsed at https://app.remotely.one/swagger (or your own server instance).  Most endpoints require authentication via an API access token, which can be created by going to Account - API Access.

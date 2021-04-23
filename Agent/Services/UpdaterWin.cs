@@ -1,7 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Win32;
-using Remotely.Agent.Interfaces;
-using Remotely.Agent.Utilities;
+﻿using Remotely.Agent.Interfaces;
 using Remotely.Shared.Utilities;
 using System;
 using System.Diagnostics;
@@ -22,18 +19,13 @@ namespace Remotely.Agent.Services
         private SemaphoreSlim CheckForUpdatesLock { get; } = new SemaphoreSlim(1, 1);
         private ConfigService ConfigService { get; }
         private SemaphoreSlim InstallLatestVersionLock { get; } = new SemaphoreSlim(1, 1);
-        private bool PreviousUpdateFailed { get; set; }
+        private DateTimeOffset LastUpdateFailure { get; set; }
         private System.Timers.Timer UpdateTimer { get; } = new System.Timers.Timer(TimeSpan.FromHours(6).TotalMilliseconds);
 
 
         public async Task BeginChecking()
         {
             if (EnvironmentHelper.IsDebug)
-            {
-                return;
-            }
-
-            if (!RegistryHelper.CheckNetFrameworkVersion())
             {
                 return;
             }
@@ -54,9 +46,9 @@ namespace Remotely.Agent.Services
                     return;
                 }
 
-                if (PreviousUpdateFailed)
+                if (LastUpdateFailure.AddDays(1) > DateTimeOffset.Now)
                 {
-                    Logger.Write("Skipping update check due to previous failure.  Restart the service to try again, or manually install the update.");
+                    Logger.Write("Skipping update check due to previous failure.  Updating will be tried again after 24 hours have passed.");
                     return;
                 }
 
@@ -65,7 +57,7 @@ namespace Remotely.Agent.Services
                 var serverUrl = ConfigService.GetConnectionInfo().Host;
 
                 var platform = Environment.Is64BitOperatingSystem ? "x64" : "x86";
-                var fileUrl = serverUrl + $"/Downloads/Remotely-Win10-{platform}.zip";
+                var fileUrl = serverUrl + $"/Content/Remotely-Win10-{platform}.zip";
 
                 var lastEtag = string.Empty;
 
@@ -126,7 +118,7 @@ namespace Remotely.Agent.Services
                 var platform = Environment.Is64BitOperatingSystem ? "x64" : "x86";
 
                 await wc.DownloadFileTaskAsync(
-                     serverUrl + $"/Downloads/Remotely_Installer.exe",
+                     serverUrl + $"/Content/Remotely_Installer.exe",
                      installerPath);
 
                 await wc.DownloadFileTaskAsync(
@@ -148,12 +140,12 @@ namespace Remotely.Agent.Services
             catch (WebException ex) when (ex.Status == WebExceptionStatus.Timeout)
             {
                 Logger.Write("Timed out while waiting to download update.", Shared.Enums.EventType.Warning);
-                PreviousUpdateFailed = true;
+                LastUpdateFailure = DateTimeOffset.Now;
             }
             catch (Exception ex)
             {
                 Logger.Write(ex);
-                PreviousUpdateFailed = true;
+                LastUpdateFailure = DateTimeOffset.Now;
             }
             finally
             {
